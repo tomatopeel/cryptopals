@@ -78,6 +78,7 @@ func retrieveFile(local string, url string) *os.File {
 		log.Fatal(err)
 	}
 
+	file.Seek(0, 0)
 	return file
 }
 
