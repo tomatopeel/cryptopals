@@ -14,7 +14,7 @@ import (
 
 var (
 	file_url   string = "http://cryptopals.com/static/challenge-data/4.txt"
-	local_file string = "secrets.txt"
+	local_file string = "secrets_01_04.txt"
 	alphabet   string = "abcdefghijklmnopqrstuvwxyz"
 	vowels     string = "aeiouAEIOU"
 	consonants string = "bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ"
