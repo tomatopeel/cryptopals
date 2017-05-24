@@ -19,6 +19,11 @@ var hamPassingTests = []struct {
 		"11111111 11111111 11111111 11111111 11111111 11111111",
 		48,
 	},
+	{
+		"ഏഏ",
+		"ಊಊ",
+		8,
+	},
 }
 
 var hamFailingTests = []struct {

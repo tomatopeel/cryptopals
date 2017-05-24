@@ -12,5 +12,4 @@ var (
 )
 
 func main() {
-
 }
