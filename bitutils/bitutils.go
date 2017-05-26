@@ -1,4 +1,4 @@
-package bitutil
+package bitutils
 
 import (
 	"errors"
