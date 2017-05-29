@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/base64"
-	"fmt"
 	"github.com/tomatopeel/pals/bitutils"
 	"github.com/tomatopeel/pals/futils"
 	"io"
@@ -15,8 +14,6 @@ var (
 	local_file  string = "secrets_01_06.txt"
 )
 
-type Blocks [][]byte
-
 func main() {
 	f, err := os.Open(local_file)
 	if err != nil {
@@ -26,31 +23,39 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	defer f.Close()
 
-	decoder := base64.NewDecoder(base64.StdEncoding, f)
 	for i := 2; i <= 40; i++ {
-		fmt.Println(Ham(decoder, 6, i))
-	}
-}
-
-func Ham(reader io.Reader, keysize, n_blocks int) float64 {
-	ham := float64(0)
-	blocks := make([][]byte, n_blocks)
-	for i := range blocks {
-		blocks[i] = make([]byte, keysize)
-		_, err := reader.Read(blocks[i])
+		decoder := base64.NewDecoder(base64.StdEncoding, f)
+		ham, err := Ham(decoder, i)
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Printf("ks=%d\tham=%f", i, ham)
+		f.Seek(0, 0)
 	}
-	for i := range blocks {
-		for j := i + 1; j < len(blocks); j++ {
-			result, err := bitutils.Hamming(blocks[i], blocks[j])
-			if err != nil {
-				log.Fatal(err)
-			}
-			ham += float64(result / keysize)
+}
+
+func Ham(reader io.Reader, keysize int) (float64, error) {
+	ham := float64(0)
+	a, b := make([]byte, keysize), make([]byte, keysize)
+	i := 0
+	for {
+		n, err := reader.Read(a)
+		if n == 0 {
+			break
 		}
+		n, err = reader.Read(b)
+		if n == 0 {
+			break
+		}
+		result, err := bitutils.Hamming(a, b)
+		normalised := float64(result) / float64(keysize)
+		if err != nil {
+			log.Fatal(err)
+		}
+		ham += float64(normalised)
+		i++
 	}
-	return ham / float64(n_blocks)
+	return ham / float64(i), nil
 }
