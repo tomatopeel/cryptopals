@@ -25,15 +25,28 @@ func main() {
 	}
 	defer f.Close()
 
-	for i := 2; i <= 40; i++ {
+	keysize := FindKeySize(1, 50, f)
+	log.Println(keysize)
+}
+
+func FindKeySize(x, y int, f *os.File) int {
+	var (
+		ham     float64
+		keysize int
+	)
+	for i := x; i <= y; i++ {
 		decoder := base64.NewDecoder(base64.StdEncoding, f)
-		ham, err := Ham(decoder, i)
+		temp_ham, err := Ham(decoder, i)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("ks=%d\tham=%f", i, ham)
+		if temp_ham < ham || ham == 0 {
+			ham = temp_ham
+			keysize = i
+		}
 		f.Seek(0, 0)
 	}
+	return keysize
 }
 
 func Ham(reader io.Reader, keysize int) (float64, error) {
