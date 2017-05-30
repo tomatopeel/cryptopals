@@ -26,6 +26,7 @@ func main() {
 	defer f.Close()
 
 	keysize := FindKeySize(1, 50, f)
+	log.Println(keysize)
 	blocks := Blocks(keysize, f)
 	transd := make([][]byte, keysize)
 
@@ -72,11 +73,10 @@ func FindKeySize(x, y int, f *os.File) int {
 			keysize = i
 		}
 
-		n, err := f.Seek(0, 0)
+		_, err = f.Seek(0, 0)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("seek's n: %d", n)
 	}
 	return keysize
 }
@@ -86,20 +86,20 @@ func Ham(reader io.Reader, keysize int) (float64, error) {
 	a, b := make([]byte, keysize), make([]byte, keysize)
 	i := 0
 	for {
-		n, err := reader.Read(a)
-		if err != nil && err != io.EOF {
+		n, err := io.ReadFull(reader, a)
+		if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
 			log.Fatal(err)
 		}
-		log.Printf("a: %x\tn=%d\tkeysize=%d", a, n, keysize)
-		if n != keysize {
+		//		log.Printf("a: %x\tlen(a): %d\tcap(a): %d", a, len(a), cap(a))
+		if n == 0 {
 			break
 		}
-		n, err = reader.Read(b)
-		if err != nil && err != io.EOF {
+		n, err = io.ReadFull(reader, b)
+		if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
 			log.Fatal(err)
 		}
-		log.Printf("b: %x\tn=%d\tkeysize=%d", b, n, keysize)
-		if n != keysize {
+		//		log.Printf("b: %x\tlen(b): %d\tcap(b): %d", b, len(b), cap(b))
+		if n == 0 {
 			break
 		}
 		result, err := bitutils.Hamming(a, b)
@@ -110,6 +110,5 @@ func Ham(reader io.Reader, keysize int) (float64, error) {
 		ham += float64(normalised)
 		i++
 	}
-	log.Println("and out...")
 	return ham / float64(i), nil
 }
