@@ -5,6 +5,7 @@ import (
 	"github.com/tomatopeel/pals/bitutils"
 	"github.com/tomatopeel/pals/futils"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 )
@@ -15,70 +16,81 @@ var (
 )
 
 func main() {
-	f, err := os.Open(local_file)
+	file, err := os.Open(local_file)
 	if err != nil {
 		futils.DownloadFile(local_file, remote_file)
-		f, err = os.Open(local_file)
+		file, err = os.Open(local_file)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	defer f.Close()
+	defer file.Close()
 
-	keysize := FindKeySize(1, 50, f)
-	log.Println(keysize)
-	blocks := Blocks(keysize, f)
-	transd := make([][]byte, keysize)
+	decoder := base64.NewDecoder(base64.StdEncoding, file)
+	data, err := ioutil.ReadAll(decoder)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	k := FindKeySize(1, 50, data)
+
+	blocks := Blocks(k, data)
+	transd := make([][]byte, k)
 
 	for _, block := range blocks {
 		for j, byte := range block {
 			transd[j] = append(transd[j], byte)
 		}
 	}
-}
 
-func Blocks(keysize int, f *os.File) (blocks [][]byte) {
-	decoder := base64.NewDecoder(base64.StdEncoding, f)
-
-	for {
-		block := make([]byte, keysize)
-		n, err := decoder.Read(block)
-		if n == 0 {
-			return
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		blocks = append(blocks, block)
+	for _, block := range transd {
+		log.Printf("%x", block)
 	}
-	return
 }
 
-func FindKeySize(x, y int, f *os.File) int {
-	var (
-		ham     float64
-		keysize int
-	)
+func FindKeySize(x, y int, data []byte) (keysize int) {
+	var ham float64
 
 	for i := x; i <= y; i++ {
-		decoder := base64.NewDecoder(base64.StdEncoding, f)
 
-		temp_ham, err := Ham(decoder, i)
-		if err != nil {
-			log.Fatal(err)
+		temp_ham, counter := float64(0), 0
+		blocks := Blocks(i, data)
+
+		for j, init := range blocks {
+			for _, rem := range blocks[j+1:] {
+
+				result, err := bitutils.Hamming(init, rem)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				temp_ham += (float64(result) / float64(i))
+				counter++
+			}
 		}
 
+		temp_ham /= float64(counter)
 		if temp_ham < ham || ham == 0 {
 			ham = temp_ham
 			keysize = i
 		}
-
-		_, err = f.Seek(0, 0)
-		if err != nil {
-			log.Fatal(err)
-		}
 	}
 	return keysize
+}
+
+func Blocks(k int, data []byte) (blocks [][]byte) {
+	for b, rem := Block(k, data); b != nil; b, rem = Block(k, rem) {
+		blocks = append(blocks, b)
+	}
+	return
+}
+
+func Block(k int, data []byte) ([]byte, []byte) {
+	if len(data) < k {
+		return nil, nil
+	} else {
+		return data[:k], data[k:]
+	}
 }
 
 func Ham(reader io.Reader, keysize int) (float64, error) {
@@ -90,7 +102,6 @@ func Ham(reader io.Reader, keysize int) (float64, error) {
 		if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
 			log.Fatal(err)
 		}
-		//		log.Printf("a: %x\tlen(a): %d\tcap(a): %d", a, len(a), cap(a))
 		if n == 0 {
 			break
 		}
@@ -98,7 +109,6 @@ func Ham(reader io.Reader, keysize int) (float64, error) {
 		if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
 			log.Fatal(err)
 		}
-		//		log.Printf("b: %x\tlen(b): %d\tcap(b): %d", b, len(b), cap(b))
 		if n == 0 {
 			break
 		}
