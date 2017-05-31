@@ -14,7 +14,7 @@ import (
 var (
 	remote_file string = "http://cryptopals.com/static/challenge-data/6.txt"
 	local_file  string = "secrets_01_06.txt"
-	alphabet    string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ,.'0123456789!()?"
+	alphabet    string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ \n\r,.'0123456789!()?\";:"
 )
 
 func main() {
@@ -51,6 +51,7 @@ func main() {
 		cracked = append(cracked, byte(c))
 	}
 	log.Println(string(cracked))
+	log.Println(string(RepXor(data, cracked)))
 }
 
 func FindKeySize(x, y int, data []byte) (keysize int) {
@@ -154,4 +155,19 @@ func Score(line []byte) (score int) {
 		}
 	}
 	return
+}
+
+func RepXor(plain []byte, key []byte) []byte {
+	plain_len := len(plain)
+	key_len := len(key)
+	result := make([]byte, plain_len)
+
+	for i, j := 0, 0; i < plain_len; i, j = i+1, j+1 {
+		if j == key_len {
+			j = 0
+		}
+		result[i] = plain[i] ^ key[j]
+	}
+
+	return result
 }
