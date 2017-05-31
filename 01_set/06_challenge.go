@@ -8,11 +8,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 )
 
 var (
 	remote_file string = "http://cryptopals.com/static/challenge-data/6.txt"
 	local_file  string = "secrets_01_06.txt"
+	alphabet    string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ,.'0123456789!()?"
 )
 
 func main() {
@@ -43,9 +45,12 @@ func main() {
 		}
 	}
 
+	cracked := []byte{}
 	for _, block := range transd {
-		log.Printf("%x", block)
+		c, _ := TopCharacter(block)
+		cracked = append(cracked, byte(c))
 	}
+	log.Println(string(cracked))
 }
 
 func FindKeySize(x, y int, data []byte) (keysize int) {
@@ -121,4 +126,32 @@ func Ham(reader io.Reader, keysize int) (float64, error) {
 		i++
 	}
 	return ham / float64(i), nil
+}
+
+func TopCharacter(secret []byte) (c rune, score int) {
+	tester := make([]byte, len(secret))
+
+	for _, a := range alphabet {
+		for i := 0; i < len(secret); i++ {
+			tester[i] = byte(a)
+		}
+		for i := range secret {
+			tester[i] ^= secret[i]
+		}
+		temp_score := Score(tester)
+		if temp_score > score {
+			score = temp_score
+			c = rune(a)
+		}
+	}
+	return
+}
+
+func Score(line []byte) (score int) {
+	for i := range line {
+		if strings.ContainsRune(alphabet, rune(line[i])) {
+			score++
+		}
+	}
+	return
 }
