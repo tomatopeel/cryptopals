@@ -42,3 +42,18 @@ func CountBits(v int) int {
 	c = ((c >> 16) + c) & 0x0000FFFF
 	return c
 }
+
+func RepeatingKeyXOR(data []byte, key []byte) []byte {
+	data_len := len(data)
+	key_len := len(key)
+	result := make([]byte, data_len)
+
+	for i, j := 0, 0; i < data_len; i, j = i+1, j+1 {
+		if j == key_len {
+			j = 0
+		}
+		result[i] = data[i] ^ key[j]
+	}
+
+	return result
+}

@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"github.com/tomatopeel/pals/bitutils"
 	"github.com/tomatopeel/pals/futils"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -34,7 +33,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	k := FindKeySize(1, 50, data)
+	k := KeySize(1, 50, data)
 
 	blocks := Blocks(k, data)
 	transd := make([][]byte, k)
@@ -45,16 +44,19 @@ func main() {
 		}
 	}
 
-	cracked := []byte{}
+	key := []byte{}
 	for _, block := range transd {
 		c, _ := TopCharacter(block)
-		cracked = append(cracked, byte(c))
+		key = append(key, byte(c))
 	}
-	log.Println(string(cracked))
-	log.Println(string(RepXor(data, cracked)))
+	log.Printf("KEY: %s", string(key))
+
+	plaintext := bitutils.RepeatingKeyXOR(data, key)
+	log.Printf("PLAINTEXT: %s", string(plaintext))
 }
 
-func FindKeySize(x, y int, data []byte) (keysize int) {
+// Determine most likely keysize between x and y
+func KeySize(x, y int, data []byte) (keysize int) {
 	var ham float64
 
 	for i := x; i <= y; i++ {
@@ -84,6 +86,7 @@ func FindKeySize(x, y int, data []byte) (keysize int) {
 	return keysize
 }
 
+// Split data into k len []byte's and return the [][]byte
 func Blocks(k int, data []byte) (blocks [][]byte) {
 	for b, rem := Block(k, data); b != nil; b, rem = Block(k, rem) {
 		blocks = append(blocks, b)
@@ -91,6 +94,7 @@ func Blocks(k int, data []byte) (blocks [][]byte) {
 	return
 }
 
+// Return k length []byte and the remaining []byte
 func Block(k int, data []byte) ([]byte, []byte) {
 	if len(data) < k {
 		return nil, nil
@@ -99,36 +103,7 @@ func Block(k int, data []byte) ([]byte, []byte) {
 	}
 }
 
-func Ham(reader io.Reader, keysize int) (float64, error) {
-	ham := float64(0)
-	a, b := make([]byte, keysize), make([]byte, keysize)
-	i := 0
-	for {
-		n, err := io.ReadFull(reader, a)
-		if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
-			log.Fatal(err)
-		}
-		if n == 0 {
-			break
-		}
-		n, err = io.ReadFull(reader, b)
-		if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
-			log.Fatal(err)
-		}
-		if n == 0 {
-			break
-		}
-		result, err := bitutils.Hamming(a, b)
-		normalised := float64(result) / float64(keysize)
-		if err != nil {
-			log.Fatal(err)
-		}
-		ham += float64(normalised)
-		i++
-	}
-	return ham / float64(i), nil
-}
-
+// Determine most likely character as part of key
 func TopCharacter(secret []byte) (c rune, score int) {
 	tester := make([]byte, len(secret))
 
@@ -155,19 +130,4 @@ func Score(line []byte) (score int) {
 		}
 	}
 	return
-}
-
-func RepXor(plain []byte, key []byte) []byte {
-	plain_len := len(plain)
-	key_len := len(key)
-	result := make([]byte, plain_len)
-
-	for i, j := 0, 0; i < plain_len; i, j = i+1, j+1 {
-		if j == key_len {
-			j = 0
-		}
-		result[i] = plain[i] ^ key[j]
-	}
-
-	return result
 }
