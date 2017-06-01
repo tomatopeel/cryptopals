@@ -18,7 +18,7 @@ var (
 func main() {
 	file, err := os.Open(local_file)
 	if err != nil {
-		futils.DownloadFile(local_file, remote_file)
+		futils.ReadAllBase64File(local_file, remote_file)
 		file, err = os.Open(local_file)
 		if err != nil {
 			log.Fatal(err)
@@ -30,7 +30,10 @@ func main() {
 	ciphertext, err := ioutil.ReadAll(decoder)
 
 	result := DecryptAesEcb(ciphertext, []byte(key))
+	result = EncryptAesEcb(result, []byte(key))
+	result = DecryptAesEcb(result, []byte(key))
 	log.Println(string(result))
+
 }
 
 func DecryptAesEcb(data, key []byte) []byte {
@@ -48,3 +51,29 @@ func DecryptAesEcb(data, key []byte) []byte {
 
 	return decrypted
 }
+
+func EncryptAesEcb(data, key []byte) []byte {
+	cipher, err := aes.NewCipher([]byte(key))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	encrypted := make([]byte, len(data))
+	size := len(key)
+
+	for bs, be := 0, size; bs < len(data); bs, be = bs+size, be+size {
+		cipher.Encrypt(encrypted[bs:be], data[bs:be])
+	}
+
+	return encrypted
+}
+
+// Thinking of doing a custom AES implementation for academia's sake
+// func MyAes(in []byte, out []byte, word []byte) {
+// 	state := make([][]byte, 4)
+
+// 	AddRoundKey(state, word)
+
+// }
+
+// func addRoundKey

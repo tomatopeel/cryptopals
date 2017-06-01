@@ -1,12 +1,9 @@
 package main
 
 import (
-	"encoding/base64"
-	"github.com/tomatopeel/pals/bitutils"
+	"github.com/tomatopeel/pals/datautils"
 	"github.com/tomatopeel/pals/futils"
-	"io/ioutil"
 	"log"
-	"os"
 	"strings"
 )
 
@@ -17,25 +14,14 @@ var (
 )
 
 func main() {
-	file, err := os.Open(local_file)
-	if err != nil {
-		futils.DownloadFile(local_file, remote_file)
-		file, err = os.Open(local_file)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	defer file.Close()
-
-	decoder := base64.NewDecoder(base64.StdEncoding, file)
-	data, err := ioutil.ReadAll(decoder)
+	data, err := futils.ReadAllBase64File(local_file, remote_file)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	k := KeySize(1, 50, data)
 
-	blocks := Blocks(k, data)
+	blocks := datautils.Blocks(k, data)
 	transd := make([][]byte, k)
 
 	for _, block := range blocks {
@@ -51,7 +37,7 @@ func main() {
 	}
 	log.Printf("KEY: %s", string(key))
 
-	plaintext := bitutils.RepeatingKeyXOR(data, key)
+	plaintext := datautils.RepeatingKeyXOR(data, key)
 	log.Printf("PLAINTEXT: %s", string(plaintext))
 }
 
@@ -62,12 +48,12 @@ func KeySize(x, y int, data []byte) (keysize int) {
 	for i := x; i <= y; i++ {
 
 		temp_ham, counter := float64(0), 0
-		blocks := Blocks(i, data)
+		blocks := datautils.Blocks(i, data)
 
 		for j, init := range blocks {
 			for _, rem := range blocks[j+1:] {
 
-				result, err := bitutils.Hamming(init, rem)
+				result, err := datautils.Hamming(init, rem)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -84,23 +70,6 @@ func KeySize(x, y int, data []byte) (keysize int) {
 		}
 	}
 	return keysize
-}
-
-// Split data into k len []byte's and return the [][]byte
-func Blocks(k int, data []byte) (blocks [][]byte) {
-	for b, rem := Block(k, data); b != nil; b, rem = Block(k, rem) {
-		blocks = append(blocks, b)
-	}
-	return
-}
-
-// Return k length []byte and the remaining []byte
-func Block(k int, data []byte) ([]byte, []byte) {
-	if len(data) < k {
-		return nil, nil
-	} else {
-		return data[:k], data[k:]
-	}
 }
 
 // Determine most likely character as part of key

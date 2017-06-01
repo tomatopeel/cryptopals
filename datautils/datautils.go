@@ -1,4 +1,4 @@
-package bitutils
+package datautils
 
 import (
 	"errors"
@@ -56,4 +56,20 @@ func RepeatingKeyXOR(data []byte, key []byte) []byte {
 	}
 
 	return result
+}
+
+// Split data into k len []byte's and return the [][]byte
+func Blocks(k int, data []byte) (blocks [][]byte) {
+	for b, rem := Block(k, data); b != nil; b, rem = Block(k, rem) {
+		blocks = append(blocks, b)
+	}
+	return
+}
+
+// Return k length []byte and the remaining []byte
+func Block(k int, data []byte) ([]byte, []byte) {
+	if len(data) < k {
+		return nil, nil
+	}
+	return data[:k], data[k:]
 }

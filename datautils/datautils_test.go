@@ -1,4 +1,4 @@
-package bitutils
+package datautils
 
 import (
 	"testing"
