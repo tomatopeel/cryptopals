@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/aes"
 	"encoding/base64"
-	"github.com/tomatopeel/pals/futils"
+	"github.com/tomatopeel/cryptopals/futils"
 	"io/ioutil"
 	"log"
 	"os"

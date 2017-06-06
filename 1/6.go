@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/tomatopeel/pals/datautils"
-	"github.com/tomatopeel/pals/futils"
+	"github.com/tomatopeel/cryptopals/datautils"
+	"github.com/tomatopeel/cryptopals/futils"
 	"log"
 	"strings"
 )
